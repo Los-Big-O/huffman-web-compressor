@@ -34,3 +34,31 @@ def desempaquetar(datos: bytes, total_bits: int) -> str:
     """Convierte bytes en bits y descarta el relleno usando el total de bits válidos."""
     bits = "".join(TABLA_BITS[byte] for byte in datos)
     return bits[:total_bits]
+
+def decodificar(bits: str, raiz: Nodo | None) -> bytes:
+    """Recorre el arbol de Huffman con la secuencia de bits y recupera los bits"""
+    if not bits or raiz is None:
+        return b""
+
+    salida = bytearray()
+    actual = raiz
+
+    for bit in bits:
+        if bit == "0":
+            actual = actual.izquierdo
+        elif bit == "1":
+            actual = actual.derecho
+        else:
+            raise ValueError(f"Bit invalido encontrado: {bit!r}")
+
+        if actual is None:
+            raise ValueError("Secuencia de bits corrupta: Camino inexistente en el arbol")
+
+        if actual.es_hoja():
+            salida.append(actual.simbolo)
+            actual = raiz
+
+    if actual is not raiz:
+        raise ValueError("Secuencia de bits incompleta: Termino fuera de una hoja")
+
+    return bytes(salida)
