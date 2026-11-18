@@ -7,6 +7,10 @@
 3. desempaquetar: hace el camino inverso (lo usa el descompresor).
 """
 
+# decodificar() usa Nodo en su firma. Sin este import, Python 3.12 y 3.13
+# lanzan NameError al importar el módulo (3.14 evalúa las anotaciones tarde).
+from huffman.arbol import Nodo
+
 # Tabla para convertir rápido un byte en sus 8 bits: TABLA_BITS[5] == "00000101"
 TABLA_BITS = [format(numero, "08b") for numero in range(256)]
 
