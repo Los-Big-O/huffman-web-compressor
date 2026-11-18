@@ -3,10 +3,131 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Huffman · Compresor de textos</title>
+  <title>Huffman · El compresor de textos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Courier+Prime:wght@400;700&display=swap">
+  <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
-  <h1>Huffman</h1>
-  <p>Compresor de textos en construcción.</p>
+<main class="libro">
+
+  <header class="portada">
+    <p class="volado">Los Big-O · Análisis de Algoritmos · MMXXVI</p>
+    <h1>Huffman</h1>
+    <p class="subtitulo">o el arte de decir más con menos bits</p>
+    <div class="ornamento" aria-hidden="true"><span>❦</span></div>
+  </header>
+
+  <!-- El índice es también el indicador de avance: cada capítulo terminado se marca. -->
+  <nav class="indice" aria-label="Capítulos">
+    <h2>Índice</h2>
+    <ol>
+      <li><a href="#cap-texto" data-capitulo="cap-texto"><span class="num">I</span><span class="nombre">El texto</span><span class="puntos" aria-hidden="true"></span><span class="verbo">cargar</span></a></li>
+      <li><a href="#cap-frecuencias" data-capitulo="cap-frecuencias"><span class="num">II</span><span class="nombre">Las frecuencias</span><span class="puntos" aria-hidden="true"></span><span class="verbo">analizar</span></a></li>
+      <li><a href="#cap-arbol" data-capitulo="cap-arbol"><span class="num">III</span><span class="nombre">El árbol</span><span class="puntos" aria-hidden="true"></span><span class="verbo">construir</span></a></li>
+      <li><a href="#cap-compresion" data-capitulo="cap-compresion"><span class="num">IV</span><span class="nombre">La compresión</span><span class="puntos" aria-hidden="true"></span><span class="verbo">comprimir y medir</span></a></li>
+      <li><a href="#cap-codice" data-capitulo="cap-codice"><span class="num">V</span><span class="nombre">El códice</span><span class="puntos" aria-hidden="true"></span><span class="verbo">inspeccionar</span></a></li>
+      <li><a href="#cap-restitucion" data-capitulo="cap-restitucion"><span class="num">VI</span><span class="nombre">La restitución</span><span class="puntos" aria-hidden="true"></span><span class="verbo">descomprimir y verificar</span></a></li>
+    </ol>
+  </nav>
+
+  <!-- Capítulo I: cargar el texto -->
+  <section id="cap-texto" class="capitulo">
+    <p class="numeral">Capítulo I</p>
+    <h2>El texto</h2>
+    <p class="capitular">Toda compresión comienza con un manuscrito. Elige un archivo de texto de tu equipo y el compresor lo leerá byte por byte, sin perder una sola letra.</p>
+    <label class="zona-carga" id="zona-txt">
+      <span class="zona-titulo">Deposita aquí tu archivo .txt</span>
+      <span class="zona-nota">o haz clic para buscarlo en tu equipo</span>
+      <input type="file" id="entrada-txt" accept=".txt,text/plain">
+    </label>
+    <p class="aviso" id="aviso-texto" role="status" hidden></p>
+    <div class="manuscrito" id="vista-texto" hidden>
+      <p class="etiqueta">Manuscrito cargado</p>
+      <p class="manuscrito-nombre" id="texto-nombre"></p>
+      <pre class="manuscrito-muestra" id="texto-muestra"></pre>
+    </div>
+  </section>
+
+  <!-- Capítulo II: tabla de frecuencias y códigos (tabla.js) -->
+  <section id="cap-frecuencias" class="capitulo">
+    <p class="numeral">Capítulo II</p>
+    <h2>Las frecuencias</h2>
+    <p class="capitular">Cada símbolo se cuenta como en el índice de un libro. Los más frecuentes recibirán los códigos más breves.</p>
+    <div id="tabla-frecuencias" class="pendiente">Carga un texto en el Capítulo I para ver cuántas veces aparece cada símbolo.</div>
+  </section>
+
+  <!-- Capítulo III: árbol de Huffman (arbol.js) -->
+  <section id="cap-arbol" class="capitulo">
+    <p class="numeral">Capítulo III</p>
+    <h2>El árbol</h2>
+    <p class="capitular">Como en un linaje familiar, el algoritmo voraz une siempre a los dos nodos de menor peso hasta que solo queda la raíz. Hacia la izquierda se anota un <strong>0</strong>; hacia la derecha, un <strong>1</strong>.</p>
+    <div id="arbol" class="pendiente">El árbol aparecerá aquí cuando cargues un texto.</div>
+  </section>
+
+  <!-- Capítulo IV: métricas y descarga del .bigo (metricas.js) -->
+  <section id="cap-compresion" class="capitulo">
+    <p class="numeral">Capítulo IV</p>
+    <h2>La compresión</h2>
+    <p class="capitular">Cada símbolo se sustituye por su código y los bits se encuadernan de ocho en ocho. El resultado es un archivo .bigo, nuestro formato propio.</p>
+    <div id="metricas" class="pendiente">Las medidas de la compresión aparecerán aquí.</div>
+    <div class="acciones" id="acciones-compresion" hidden>
+      <button type="button" class="boton principal" id="boton-descargar-bigo">Descargar el archivo .bigo</button>
+      <button type="button" class="boton" id="boton-inspeccionar-actual">Inspeccionar este archivo</button>
+    </div>
+  </section>
+
+  <!-- Capítulo V: inspector del archivo .bigo (inspector.js) -->
+  <section id="cap-codice" class="capitulo">
+    <p class="numeral">Capítulo V</p>
+    <h2>El códice</h2>
+    <p class="capitular">Examina un archivo .bigo sin tener el texto original: su sello, su linaje y la escritura cifrada que guarda. Nada se descomprime todavía.</p>
+    <label class="zona-carga" id="zona-bigo">
+      <span class="zona-titulo">Deposita aquí un archivo .bigo</span>
+      <span class="zona-nota">o usa «Inspeccionar este archivo» en el Capítulo IV</span>
+      <input type="file" id="entrada-bigo" accept=".bigo">
+    </label>
+    <p class="aviso" id="aviso-codice" role="status" hidden></p>
+    <div id="inspector" hidden>
+      <div id="inspector-ficha"></div>
+      <div id="inspector-metricas"></div>
+      <h3>Anatomía del archivo</h3>
+      <div id="inspector-mapa"></div>
+      <h3>Tabla de frecuencias y códigos reconstruidos</h3>
+      <div id="inspector-tabla"></div>
+      <h3>Árbol reconstruido</h3>
+      <div id="inspector-arbol"></div>
+      <h3>Escritura cifrada</h3>
+      <div id="inspector-bits"></div>
+    </div>
+  </section>
+
+  <!-- Capítulo VI: descompresión e integridad (descompresion.js) -->
+  <section id="cap-restitucion" class="capitulo">
+    <p class="numeral">Capítulo VI</p>
+    <h2>La restitución</h2>
+    <p class="capitular">Con el árbol reconstruido se recorren los bits uno a uno hasta recuperar el texto. Su huella SHA-256 dirá si es idéntico al original.</p>
+    <p class="pendiente" id="estado-descompresion">Primero comprime un texto o inspecciona un archivo .bigo.</p>
+    <div class="acciones">
+      <button type="button" class="boton principal" id="boton-descomprimir" disabled>Descomprimir</button>
+    </div>
+    <p class="aviso" id="aviso-restitucion" role="status" hidden></p>
+    <div id="resultado-descompresion" hidden></div>
+  </section>
+
+  <footer class="colofon">
+    <span aria-hidden="true">❧</span>
+    <p>Colofón · Compuesto con el algoritmo de Huffman por Los Big-O · Formato propio .bigo, versión 1</p>
+  </footer>
+</main>
+
+<!-- Cada módulo se encarga de un capítulo. app.js va primero porque los demás usan sus funciones. -->
+<script src="app.js"></script>
+<script src="metricas.js"></script>
+<script src="tabla.js"></script>
+<script src="arbol.js"></script>
+<script src="inspector.js"></script>
+<script src="descompresion.js"></script>
 </body>
 </html>
