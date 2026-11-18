@@ -234,11 +234,8 @@ def descomprimir_bigo(contenido_bigo: bytes) -> dict:
         sha256_calculado == info["sha256_digest"]
         and len(datos_recuperados) == info["tamano_original"]
     )
-
-    if not integro:
-        raise ValueError(
-            "Fallo de integridad: el hash SHA-256 del archivo recuperado no coincide con la cabecera"
-        )
+    # Si las huellas no coinciden NO se lanza error: se devuelve integro=False
+    # con las dos huellas, para que la interfaz pueda mostrarlas y compararlas.
 
     texto_recuperado = datos_recuperados.decode("utf-8", errors="replace")
 

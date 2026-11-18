@@ -51,10 +51,11 @@ Todas las rutas responden en formato JSON. En caso de error (`400`, `413` o `502
 - **Endpoint:** `POST /api/descomprimir`
 - **Entrada:** `FormData` con campo `archivo` (`.bigo`)
 - **Respuesta (`200 OK`):**
-  - `nombre_salida` (`*_recuperado.txt`), `integro` (`true`), `sha256_esperado`, `sha256_calculado`, `tamano_recuperado`
+  - `nombre_salida` (`*_recuperado.txt`), `integro` (`true` o `false`), `sha256_esperado`, `sha256_calculado`, `tamano_recuperado`
   - `archivo_txt_b64`: texto recuperado en Base64, para mostrarlo y para descargarlo identico.
     El texto ya no se envia tambien en plano (`texto_recuperado`): duplicado, un libro de 3 MB
     producia una respuesta de 7.3 MB
   - *(contrato)* `nombre_original`: deducido del nombre del `.bigo` (`libro.bigo` → `libro.txt`)
   - *(contrato)* `bytes`, `sha256_guardado`, `sha256_recuperado`: iguales a `tamano_recuperado`, `sha256_esperado`, `sha256_calculado`
-  - Si el SHA-256 no coincide, responde `400` con el error
+  - Si el SHA-256 no coincide, responde `200` con `integro: false` y las dos huellas para compararlas.
+    Si los datos están tan dañados que no se pueden decodificar, responde `400` con el error
