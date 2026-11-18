@@ -12,12 +12,28 @@ import urllib.request
 
 from flask import Flask, jsonify, request, send_from_directory
 
+from huffman.adaptador import campos_compresion, campos_descompresion, campos_inspeccion
 from huffman.formato import descomprimir_bigo, empaquetar_bigo, inspeccionar_bigo
 
 app = Flask(__name__, static_folder="public", static_url_path="")
 
 GUTENDEX_API = "https://gutendex.com/books"
 USER_AGENT = "HuffmanWebCompressor"
+
+# Vercel acepta como máximo 4.5 MB por petición; con 4 MB dejamos margen para
+# los encabezados del multipart. Es el límite que promete docs/api.md.
+LIMITE_BYTES = 4 * 1024 * 1024
+
+
+@app.before_request
+def rechazar_archivos_grandes():
+    """Responde 413 con JSON antes de leer un archivo demasiado grande.
+
+    Se revisa aquí (y no dentro de cada endpoint) porque los endpoints atrapan
+    cualquier excepción y la convertirían en un 400 genérico.
+    """
+    if request.content_length and request.content_length > LIMITE_BYTES:
+        return jsonify({"error": "El archivo pasa de 4 MB, el máximo permitido"}), 413
 
 
 def _nombre_base_sin_ext(nombre: str) -> str:
@@ -57,18 +73,19 @@ def api_comprimir():
         nombre_salida = f"{_nombre_base_sin_ext(nombre_original)}.bigo"
         bigo_b64 = base64.b64encode(resultado["archivo_bigo"]).decode("ascii")
 
-        return jsonify(
-            {
-                "nombre_original": nombre_original,
-                "nombre_salida": nombre_salida,
-                "version": f"BIGO v{resultado['version']}",
-                "sha256": resultado["sha256"],
-                "metricas": resultado["metricas"],
-                "tabla": resultado["tabla"],
-                "arbol": resultado["arbol"],
-                "archivo_bigo_b64": bigo_b64,
-            }
-        )
+        respuesta = {
+            "nombre_original": nombre_original,
+            "nombre_salida": nombre_salida,
+            "version": f"BIGO v{resultado['version']}",
+            "sha256": resultado["sha256"],
+            "metricas": resultado["metricas"],
+            "tabla": resultado["tabla"],
+            "arbol": resultado["arbol"],
+            "archivo_bigo_b64": bigo_b64,
+        }
+        # Agrega los campos del contrato (docs/api.md) que usa el frontend.
+        respuesta.update(campos_compresion(resultado, nombre_salida))
+        return jsonify(respuesta)
     except Exception as exc:
         return jsonify({"error": f"Error al comprimir: {exc}"}), 400
 
@@ -144,19 +161,20 @@ def api_gutenberg_comprimir():
         nombre_salida = f"{nombre_limpio or 'gutenberg'}.bigo"
         bigo_b64 = base64.b64encode(resultado["archivo_bigo"]).decode("ascii")
 
-        return jsonify(
-            {
-                "nombre_original": f"{nombre_limpio}.txt",
-                "nombre_salida": nombre_salida,
-                "version": f"BIGO v{resultado['version']}",
-                "sha256": resultado["sha256"],
-                "metricas": resultado["metricas"],
-                "tabla": resultado["tabla"],
-                "arbol": resultado["arbol"],
-                "archivo_bigo_b64": bigo_b64,
-                "vista_previa_texto": datos[:600].decode("utf-8", errors="replace"),
-            }
-        )
+        respuesta = {
+            "nombre_original": f"{nombre_limpio}.txt",
+            "nombre_salida": nombre_salida,
+            "version": f"BIGO v{resultado['version']}",
+            "sha256": resultado["sha256"],
+            "metricas": resultado["metricas"],
+            "tabla": resultado["tabla"],
+            "arbol": resultado["arbol"],
+            "archivo_bigo_b64": bigo_b64,
+            "vista_previa_texto": datos[:600].decode("utf-8", errors="replace"),
+        }
+        # Misma respuesta que /api/comprimir, con los campos del contrato.
+        respuesta.update(campos_compresion(resultado, nombre_salida))
+        return jsonify(respuesta)
     except Exception as exc:
         return jsonify({"error": f"No se pudo descargar el libro: {exc}"}), 502
 
@@ -171,6 +189,8 @@ def api_inspeccionar():
 
     try:
         reporte = inspeccionar_bigo(contenido, archivo.filename)
+        # Agrega los campos del contrato (docs/api.md) que usa el inspector.
+        reporte.update(campos_inspeccion(contenido, archivo.filename, reporte))
         return jsonify(reporte)
     except Exception as exc:
         return jsonify({"error": str(exc)}), 400
@@ -189,17 +209,21 @@ def api_descomprimir():
         nombre_txt = f"{_nombre_base_sin_ext(archivo.filename)}_recuperado.txt"
         txt_b64 = base64.b64encode(resultado["datos_recuperados"]).decode("ascii")
 
-        return jsonify(
-            {
-                "nombre_salida": nombre_txt,
-                "integro": resultado["integro"],
-                "sha256_esperado": resultado["sha256_esperado"],
-                "sha256_calculado": resultado["sha256_calculado"],
-                "tamano_recuperado": resultado["tamano_recuperado"],
-                "texto_recuperado": resultado["texto_recuperado"],
-                "archivo_txt_b64": txt_b64,
-            }
-        )
+        respuesta = {
+            "nombre_salida": nombre_txt,
+            "integro": resultado["integro"],
+            "sha256_esperado": resultado["sha256_esperado"],
+            "sha256_calculado": resultado["sha256_calculado"],
+            "tamano_recuperado": resultado["tamano_recuperado"],
+            # El texto va UNA sola vez, en base64 (archivo_txt_b64). Antes
+            # también iba como "texto_recuperado": con un libro de 3 MB la
+            # respuesta pesaba 7.3 MB y pasaba el límite de 4.5 MB de Vercel.
+            # El frontend decodifica el base64 para mostrar el texto.
+            "archivo_txt_b64": txt_b64,
+        }
+        # Agrega los campos del contrato (docs/api.md) que usa el frontend.
+        respuesta.update(campos_descompresion(resultado, archivo.filename))
+        return jsonify(respuesta)
     except Exception as exc:
         return jsonify({"error": str(exc)}), 400
 
