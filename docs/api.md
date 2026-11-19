@@ -11,7 +11,14 @@ nombre del equipo y van **una sola vez**, para que un libro de 3 MB quepa en el 
 
 Todos los endpoints reciben el archivo con `multipart/form-data` en un campo llamado
 **`archivo`** y responden JSON. Si algo sale mal, responden con código 400 (o 413 si
-el archivo pasa de 4 MB) y `{"error": "mensaje para mostrar al usuario"}`.
+el archivo pasa del límite) y `{"error": "mensaje para mostrar al usuario"}`.
+
+Límites de tamaño (Vercel acepta como máximo 4.5 MB por petición y por respuesta):
+
+| Archivo | Máximo | Por qué |
+|---|---|---|
+| `.txt` (`/api/comprimir`) | 3 MB | `/api/descomprimir` devuelve el texto en base64 (4/3 del tamaño): con 3 MB la respuesta mide unos 4 MB. |
+| `.bigo` (`/api/inspeccionar`, `/api/descomprimir`) | 3 MB + 4 KB | Un `.bigo` es el texto comprimido más su encabezado (hasta 2,359 bytes); un texto de casi 3 MB que casi no se comprime produce un `.bigo` de poco más de 3 MB, y debe poder abrirse. |
 
 Ejemplo desde JavaScript:
 

@@ -2,7 +2,11 @@
 
 Todas las rutas responden en formato JSON. En caso de error (`400`, `413` o `502`), devuelven `{"error": "Mensaje descriptivo"}`
 
-- `413`: la peticion pasa de 4 MB (Vercel acepta como maximo 4.5 MB por peticion y por respuesta).
+- `413`: la peticion pasa del limite. Vercel acepta como maximo 4.5 MB por peticion y por respuesta.
+  - `.txt` (`/api/comprimir`) y libros de Gutenberg: **3 MB**. `/api/descomprimir` devuelve el texto
+    en Base64 (4/3 del tamaño): con 3 MB la respuesta mide unos 4 MB.
+  - `.bigo` (`/api/inspeccionar`, `/api/descomprimir`): **3 MB + 4 KB**. El `.bigo` suma al texto
+    comprimido su encabezado (hasta 2,359 bytes); si el texto casi no se comprime, pasa de 3 MB.
 - Ademas de sus campos, las respuestas incluyen los campos del contrato que usa el frontend
   (`docs/api.md`); los agrega `huffman/adaptador.py`. Abajo se marcan como *(contrato)*.
 - Los campos grandes (el `.bigo` y el texto recuperado en Base64) van **una sola vez**, para que

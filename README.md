@@ -128,9 +128,10 @@ de hashes y pruebas en el navegador. El registro por tarea está en
 
 - **Textos cortos:** el encabezado (55 bytes + 9 por símbolo) hace que el `.bigo` pese más que
   el original; la reducción solo aparece a partir de unos pocos KB.
-- **Tamaño máximo de 4 MB:** Vercel acepta como máximo 4.5 MB por petición y por respuesta, así
-  que el servidor rechaza archivos de más de 4 MB (error 413). Con libros de Gutenberg muy
-  grandes (más de ~3 MB) la respuesta puede pasar ese límite.
+- **Tamaño máximo de 3 MB:** Vercel acepta como máximo 4.5 MB por petición y por respuesta. Al
+  descomprimir, el texto viaja en base64 (4/3 de su tamaño), así que el servidor rechaza los
+  `.txt` y los libros de Gutenberg de más de 3 MB (error 413). Los `.bigo` pueden medir hasta
+  3 MB + 4 KB, porque llevan el encabezado además del texto comprimido.
 - **Nombre y fecha no se guardan:** el formato v1 todavía no incluye el nombre original ni la
   fecha de creación; el inspector oculta esas filas.
 - **Project Gutenberg** depende de que gutendex.com y gutenberg.org estén disponibles. Con un

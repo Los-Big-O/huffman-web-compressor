@@ -63,7 +63,7 @@ mi frontend se conecta a él a través de `huffman/adaptador.py`.
 - Pruebas: pytest (`pytest.ini` con `pythonpath = .`).
 
 ```
-app.py                  # Flask (equipo): sirve public/, endpoints /api/... y Gutenberg; 413 si > 4 MB
+app.py                  # Flask (equipo): sirve public/, endpoints /api/... y Gutenberg; 413 si .txt > 3 MB o .bigo > 3 MB + 4 KB
 huffman/frecuencias.py  # calcular_frecuencias(bytes), describir_simbolo(byte)
 huffman/arbol.py        # Nodo, construir_arbol(frecuencias)
 huffman/codigos.py      # generar_codigos(raiz)
@@ -115,6 +115,11 @@ MÁS los del contrato, que agrega `huffman/adaptador.py`; no se quitan los del e
 Los campos grandes van una sola vez y con el nombre del equipo (`archivo_bigo_b64`,
 `archivo_txt_b64`): así un libro de 3 MB cabe en los 4.5 MB de Vercel (lo prueba
 `test_contrato_api.py`). Por la misma razón `/api/descomprimir` ya no manda `texto_recuperado`.
+
+Límites (`app.py`): `.txt` y libros de Gutenberg, 3 MB (`LIMITE_BYTES`); `.bigo`, 3 MB + 4 KB
+(`LIMITE_BIGO_BYTES`), porque el `.bigo` suma el encabezado (hasta 2,359 bytes) y un texto de
+casi 3 MB que casi no se comprime debe poder inspeccionarse y descomprimirse. Lo prueba
+`test_el_peor_caso_en_el_limite_cabe_en_vercel`.
 
 - `POST /api/comprimir` (.txt) → `nombre_original`, `nombre_bigo`, `metricas`, `tabla`,
   `arbol`, `bits_muestra`, `archivo_bigo_b64`.

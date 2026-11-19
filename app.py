@@ -20,9 +20,19 @@ app = Flask(__name__, static_folder="public", static_url_path="")
 GUTENDEX_API = "https://gutendex.com/books"
 USER_AGENT = "HuffmanWebCompressor"
 
-# Vercel acepta como máximo 4.5 MB por petición; con 4 MB dejamos margen para
-# los encabezados del multipart. Es el límite que promete docs/api.md.
-LIMITE_BYTES = 4 * 1024 * 1024
+# Vercel acepta como máximo 4.5 MB por petición y por RESPUESTA. El límite lo
+# pone la respuesta de /api/descomprimir: devuelve el texto en base64, que pesa
+# 4/3 del original. Con 3 MB: 3 × 4/3 = 4 MB, y cabe; con 4 MB serían 5.3 MB.
+LIMITE_BYTES = 3 * 1024 * 1024
+
+# Los .bigo (inspeccionar y descomprimir) aceptan 4 KB más. Un .bigo es el texto
+# comprimido MÁS su encabezado (55 bytes + 9 por símbolo: como máximo 2,359 bytes
+# con los 256 símbolos). Si un texto de casi 3 MB casi no se comprime, su .bigo
+# pasa de 3 MB; con el mismo límite, la app generaría un .bigo que después no
+# aceptaría. La respuesta de descomprimir sigue cabiendo: devuelve el original,
+# que mide como máximo 3 MB.
+LIMITE_BIGO_BYTES = LIMITE_BYTES + 4 * 1024
+RUTAS_BIGO = ("/api/inspeccionar", "/api/descomprimir")
 
 
 @app.before_request
@@ -32,13 +42,16 @@ def rechazar_archivos_grandes():
     Se revisa aquí (y no dentro de cada endpoint) porque los endpoints atrapan
     cualquier excepción y la convertirían en un 400 genérico.
     """
-    if request.content_length and request.content_length > LIMITE_BYTES:
-        return jsonify({"error": "El archivo pasa de 4 MB, el máximo permitido"}), 413
+    if request.path in RUTAS_BIGO:
+        limite, mensaje = LIMITE_BIGO_BYTES, "El archivo .bigo pasa de 3 MB + 4 KB, el máximo permitido"
+    else:
+        limite, mensaje = LIMITE_BYTES, "El archivo pasa de 3 MB, el máximo permitido"
+    if request.content_length and request.content_length > limite:
+        return jsonify({"error": mensaje}), 413
 
 
-# Tamaño máximo de un libro de Gutenberg. Su .bigo viaja en base64 (≈ 4/3 del
-# tamaño), así que con 3 MB la respuesta cabe en los 4.5 MB de Vercel.
-LIMITE_LIBRO_BYTES = 3 * 1024 * 1024
+# Un libro de Gutenberg tiene el mismo límite que un .txt local, por la misma razón.
+LIMITE_LIBRO_BYTES = LIMITE_BYTES
 
 
 def _es_url_de_gutenberg(url: str) -> bool:
