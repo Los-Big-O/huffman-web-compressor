@@ -1,3 +1,4 @@
+<img width="1332" height="777" alt="Huffman 1" src="https://github.com/user-attachments/assets/b3e9edde-f572-4e8f-9271-2c79cbf93aea" />
 # Huffman Web Compressor
 
 Aplicación web que comprime y descomprime archivos de texto con el **algoritmo de Huffman**
@@ -11,6 +12,8 @@ Aplicación web que comprime y descomprime archivos de texto con el **algoritmo 
 - Aldo Damián Gutiérrez Medina
 - Alan Arturo Uribe Pérez
 - Karol Nungaray Escobedo
+
+<img width="1332" height="777" alt="Huffman 1" src="https://github.com/user-attachments/assets/b96aed5a-a184-44ec-ac75-445d4947580e" />
 
 ## Qué hace
 
