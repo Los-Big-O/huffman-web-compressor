@@ -98,6 +98,28 @@ h3 {
 .zona-nota { font-style: italic; color: var(--tinta-suave); }
 .zona-carga input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
+/* Biblioteca de Project Gutenberg (gutenberg.js): un catálogo de fichas */
+.biblioteca { margin-top: 28px; }
+.separador { display: flex; align-items: center; gap: 14px; margin: 0 0 18px; font-style: italic; color: var(--tinta-suave); }
+.separador::before, .separador::after { content: ""; flex: 1; height: 1px; background: var(--linea); }
+.buscador label { display: block; margin: 8px 0 6px; font-style: italic; color: var(--tinta-suave); }
+.buscador-fila { display: flex; flex-wrap: wrap; gap: 10px; }
+.buscador input {
+  flex: 1; min-width: 0; padding: 10px 14px;
+  font: inherit; color: var(--tinta);
+  background: var(--papel-claro); border: 1px solid var(--linea);
+}
+.buscador input:focus-visible { outline: 3px solid var(--acento); outline-offset: 2px; }
+.catalogo { list-style: none; margin: 14px 0 0; padding: 0; }
+.catalogo:empty { display: none; }
+.libro-ficha {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px;
+  padding: 14px 4px; border-bottom: 1px dotted var(--linea);
+}
+.libro-ficha > div { flex: 1; min-width: 220px; }
+.libro-titulo { margin: 0; font-weight: 600; }
+.libro-autor { margin: 2px 0 0; font-style: italic; color: var(--tinta-suave); }
+
 /* Avisos */
 .aviso { margin: 16px 0 0; padding: 12px 16px; border-left: 4px solid var(--linea); background: var(--papel-claro); }
 .aviso.error { border-color: var(--mal); color: var(--mal); }

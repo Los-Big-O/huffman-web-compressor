@@ -5,6 +5,39 @@ Herramienta: Claude Code (modelo Claude Opus), usado por Damián en su rama.
 En cada tarea, las decisiones fueron mías; la IA propuso, escribió código y lo probó,
 y cada commit me lo explicó antes de hacerse.
 
+## Antes de Claude Code: Claude en claude.ai
+
+Estas partes se generaron conversando con Claude en claude.ai; yo copié el resultado al
+repositorio, lo revisé y lo subí con commits míos.
+
+### Planeación
+
+- **Pedido:** dividir la actividad en tareas y días, decidir el reparto con el equipo y
+  definir decisiones de diseño (Huffman sobre bytes, desempate fijo del árbol, guardar la tabla
+  de frecuencias en lugar del árbol, contrato de la API entre backend y frontend).
+- **Validación:** se contrastó con el enunciado de la actividad y con lo que el profesor
+  indicó como primordial. El plan original de 4 días se ajustó después a lo que el equipo
+  fue subiendo a `main`.
+
+### Núcleo del algoritmo (día 1, rama `Damian`, fusionada en el PR #19)
+
+- **Pedido:** frecuencias por byte, árbol de Huffman con cola de prioridad voraz (`heapq`),
+  generación de códigos y codificación/empaquetado de bits, sin bibliotecas de compresión.
+- **Resultado:** `huffman/frecuencias.py`, `arbol.py`, `codigos.py` y `bits.py`
+  (`decodificar` lo agregó después el equipo).
+- **Validación:** pruebas con pytest (`tests/test_frecuencias.py`, `test_arbol.py`,
+  `test_codigos.py` y `test_bits.py`: 21 pruebas hoy) y el ejemplo "ABRACADABRA" verificado
+  a mano (A=0, C=100, D=101, B=110, R=111; 23 bits; bytes `6E 8A DC`).
+
+### Frontend (estilo "libro antiguo")
+
+- **Pedido:** una interfaz sin frameworks con un capítulo por paso de la actividad, árbol
+  dibujado en SVG propio y todo construido con `textContent` (nunca `innerHTML` con datos del
+  usuario).
+- **Validación:** prueba en el navegador del flujo completo (cargar, tabla, árbol, métricas,
+  inspector, descompresión) antes de subirlo; después, de nuevo con el backend del equipo
+  (ver 2026-11-17, punto 5).
+
 ## 2026-11-17 · Integración del backend del equipo con el frontend (rama `Damian-frontend`)
 
 ### 1. Revisar lo que subió el equipo a `main`
@@ -62,8 +95,75 @@ Durante la sesión, `huffman/formato.py` apareció duplicado (504 líneas en lug
 sin que la IA lo editara, probablemente por el editor. La IA se detuvo y avisó; lo restauré
 con `git restore` y se verificaron las 251 líneas y las pruebas.
 
+## 2026-11-18 · Revisión final contra la actividad (Claude Code)
+
+### 1. Documentación del formato (`docs/formato.md`)
+
+- **Pedido:** el formato `.bigo` del equipo byte por byte, con ABRACADABRA en hexadecimal.
+- **Validación:** los bytes salen del `.bigo` real que genera `empaquetar_bigo`; el SHA-256 de
+  "ABRACADABRA" se comprobó por fuera de Python con `sha256sum`.
+
+### 2. Buscador de Project Gutenberg en el Capítulo I
+
+- **Pedido:** usar `/api/gutenberg/buscar` y `/api/gutenberg/comprimir` desde la interfaz.
+- **Validación:** `tests/test_gutenberg.py` simula las respuestas de Gutendex y Gutenberg
+  (los sitios estaban en mantenimiento): búsqueda, compresión con los campos del contrato y
+  descompresión idéntica. `node --check` del JavaScript. **Pendiente:** probarlo en el
+  navegador cuando Gutenberg vuelva a estar disponible.
+
+### 3. README
+
+- **Pedido:** README completo con integrantes, deploy, algoritmo, resultados y limitaciones.
+- **Validación:** los resultados de compresión se midieron con textos reales (y se
+  verificó que cada uno se recupera idéntico); se comprobó que la URL del deploy responde.
+
+### 4. Guía de pruebas mínimas (`docs/pruebas/README.md`)
+
+- **Pedido:** una tabla para las cuatro pruebas mínimas, lista para mis capturas.
+- **Validación:** las pruebas automáticas que cita existen y pasan.
+
+### 5. Prueba del equipo que fallaba
+
+- **Pedido:** corregir `test_flujo_api_comprimir_inspeccionar_descomprimir` (de Alan) con un
+  texto más largo y documentar aparte la limitación de los textos cortos.
+- **Hallazgo:** su última línea usaba `texto_recuperado`, que se quitó de la respuesta el
+  2026-11-17; no se notaba porque la prueba fallaba antes. Ahora compara `archivo_txt_b64`.
+- **Validación:** `python -m pytest` con 0 fallas (46 pruebas).
+
+### 6. Seguridad y tamaño en `/api/gutenberg/comprimir` (código del equipo)
+
+- **Hallazgo de la IA, corregido con mi permiso:** la URL se aceptaba si contenía el texto
+  "gutenberg.org" (pasaba `https://otro.com/?gutenberg.org`) y el libro se descargaba sin límite.
+- **Pedido:** validar que el dominio sea `gutenberg.org` o un subdominio y limitar la descarga
+  a 3 MB con un mensaje claro. Revisé el diff antes del commit.
+- **Resultado:** `_es_url_de_gutenberg()` revisa el servidor con `urlparse` (y la URL final
+  después de redirecciones); se leen como máximo 3 MB + 1 byte y, si llega ese byte, 413.
+- **Validación:** 10 pruebas nuevas en `tests/test_gutenberg.py` con la red simulada: 7 URLs
+  engañosas rechazadas sin intentar descargar, 2 aceptadas, una redirección a otro sitio y un
+  libro de 3 MB + 1 byte.
+
+### 7. CLAUDE.md con `gutenberg.js`
+
+- **Pedido:** que el contexto del proyecto describa el nuevo módulo del Capítulo I.
+- **Validación:** revisé el diff.
+
+### 8. Límites de tamaño: 3 MB para `.txt` y 3 MB + 4 KB para `.bigo`
+
+- **Hallazgo de la IA:** con el límite de 4 MB, un `.txt` de 3.5 MB se comprimía, pero al
+  descomprimirlo la respuesta (base64, 4/3 del tamaño) pasaba los 4.5 MB de Vercel.
+- **Pedido:** bajar el límite de los `.txt` a 3 MB y actualizar toda la documentación.
+- **Segundo hallazgo, gracias a una prueba nueva:** un texto de casi 3 MB que casi no se
+  comprime produce un `.bigo` de poco más de 3 MB (por el encabezado, hasta 2,359 bytes), y la
+  app lo rechazaba al inspeccionar o descomprimir. Decidí dar a los `.bigo` 3 MB + 4 KB.
+- **Validación:** `test_el_peor_caso_en_el_limite_cabe_en_vercel` (bytes al azar justo en el
+  límite: las dos respuestas quedan debajo de 4.5 MB y el texto se recupera idéntico) y
+  pruebas del 413 para cada límite. `python -m pytest`: 58 pasan, 0 fallas.
+
 ## Limitaciones conocidas
 
 - El formato v1 del equipo no guarda nombre original ni fecha; se les pidió agregarlos.
-- La prueba `test_flujo_api_comprimir_inspeccionar_descomprimir` del equipo sigue fallando
-  por usar un texto demasiado corto; no la modifiqué porque es del equipo.
+- En textos muy cortos el `.bigo` pesa más que el original (lo documenta
+  `test_texto_muy_corto_el_bigo_pesa_mas_que_el_original`).
+- Tamaño máximo: 3 MB para `.txt` y libros de Gutenberg, 3 MB + 4 KB para `.bigo`, por el
+  límite de 4.5 MB por respuesta de Vercel.
+- El buscador de Gutenberg no se ha probado en el navegador porque el sitio estaba caído.

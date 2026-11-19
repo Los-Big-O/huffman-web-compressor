@@ -63,17 +63,17 @@ mi frontend se conecta a él a través de `huffman/adaptador.py`.
 - Pruebas: pytest (`pytest.ini` con `pythonpath = .`).
 
 ```
-app.py                  # Flask (equipo): sirve public/, endpoints /api/... y Gutenberg; 413 si > 4 MB
+app.py                  # Flask (equipo): sirve public/, endpoints /api/... y Gutenberg; 413 si .txt > 3 MB o .bigo > 3 MB + 4 KB
 huffman/frecuencias.py  # calcular_frecuencias(bytes), describir_simbolo(byte)
 huffman/arbol.py        # Nodo, construir_arbol(frecuencias)
 huffman/codigos.py      # generar_codigos(raiz)
 huffman/bits.py         # codificar, empaquetar, desempaquetar, decodificar (equipo)
 huffman/formato.py      # (equipo) empaquetar_bigo, inspeccionar_bigo, descomprimir_bigo
 huffman/adaptador.py    # (mío) agrega a las respuestas del equipo los campos de docs/api.md
-public/                 # index.html, estilos.css y un .js por capítulo
+public/                 # index.html, estilos.css y un .js por tarea (incluye gutenberg.js)
 API.md                  # documentación del backend del equipo (todos sus campos)
 docs/api.md             # contrato que usa el frontend
-tests/                  # pruebas (test_adaptador, test_contrato_api, test_integridad son mías)
+tests/                  # pruebas (test_adaptador, test_contrato_api, test_integridad, test_gutenberg son mías)
 ```
 
 No hay `cli.py` en `main`. Revisa `main` por si el equipo cambia la estructura.
@@ -116,6 +116,11 @@ Los campos grandes van una sola vez y con el nombre del equipo (`archivo_bigo_b6
 `archivo_txt_b64`): así un libro de 3 MB cabe en los 4.5 MB de Vercel (lo prueba
 `test_contrato_api.py`). Por la misma razón `/api/descomprimir` ya no manda `texto_recuperado`.
 
+Límites (`app.py`): `.txt` y libros de Gutenberg, 3 MB (`LIMITE_BYTES`); `.bigo`, 3 MB + 4 KB
+(`LIMITE_BIGO_BYTES`), porque el `.bigo` suma el encabezado (hasta 2,359 bytes) y un texto de
+casi 3 MB que casi no se comprime debe poder inspeccionarse y descomprimirse. Lo prueba
+`test_el_peor_caso_en_el_limite_cabe_en_vercel`.
+
 - `POST /api/comprimir` (.txt) → `nombre_original`, `nombre_bigo`, `metricas`, `tabla`,
   `arbol`, `bits_muestra`, `archivo_bigo_b64`.
 - `POST /api/inspeccionar` (.bigo) → `archivo{nombre,extension,bytes}`, `formato{firma,version}`,
@@ -138,10 +143,16 @@ un libro con índice y 6 capítulos que siguen el flujo de la actividad:
 I El texto (cargar) → II Las frecuencias → III El árbol → IV La compresión (métricas y
 descarga) → V El códice (inspector) → VI La restitución (descomprimir y verificar).
 
-Un archivo JS por capítulo: `app.js` (estado compartido, utilidades, carga del .txt),
-`metricas.js`, `tabla.js`, `arbol.js`, `inspector.js`, `descompresion.js`. `app.js` llama
-a cada módulo solo si existe (`typeof fn === "function"`). Todo se construye con
-`textContent`, nunca `innerHTML` con datos del usuario.
+Un archivo JS por tarea: `app.js` (estado compartido, utilidades, carga del .txt),
+`gutenberg.js` (buscador de Project Gutenberg, también en el Capítulo I), `metricas.js`,
+`tabla.js`, `arbol.js`, `inspector.js`, `descompresion.js`. `app.js` llama a cada módulo
+solo si existe (`typeof fn === "function"`). Todo se construye con `textContent`, nunca
+`innerHTML` con datos del usuario.
+
+`gutenberg.js` usa `/api/gutenberg/buscar` y `/api/gutenberg/comprimir` (el servidor baja
+el libro; máximo 3 MB y solo de `gutenberg.org` o sus subdominios). Como el navegador solo
+recibe una vista previa, deja `estado.original = null` y el Capítulo VI verifica con
+SHA-256 sin comparar byte a byte. Sus pruebas (`tests/test_gutenberg.py`) simulan la red.
 
 ## Material que ya existe fuera de `main`
 

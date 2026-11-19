@@ -20,9 +20,19 @@ app = Flask(__name__, static_folder="public", static_url_path="")
 GUTENDEX_API = "https://gutendex.com/books"
 USER_AGENT = "HuffmanWebCompressor"
 
-# Vercel acepta como máximo 4.5 MB por petición; con 4 MB dejamos margen para
-# los encabezados del multipart. Es el límite que promete docs/api.md.
-LIMITE_BYTES = 4 * 1024 * 1024
+# Vercel acepta como máximo 4.5 MB por petición y por RESPUESTA. El límite lo
+# pone la respuesta de /api/descomprimir: devuelve el texto en base64, que pesa
+# 4/3 del original. Con 3 MB: 3 × 4/3 = 4 MB, y cabe; con 4 MB serían 5.3 MB.
+LIMITE_BYTES = 3 * 1024 * 1024
+
+# Los .bigo (inspeccionar y descomprimir) aceptan 4 KB más. Un .bigo es el texto
+# comprimido MÁS su encabezado (55 bytes + 9 por símbolo: como máximo 2,359 bytes
+# con los 256 símbolos). Si un texto de casi 3 MB casi no se comprime, su .bigo
+# pasa de 3 MB; con el mismo límite, la app generaría un .bigo que después no
+# aceptaría. La respuesta de descomprimir sigue cabiendo: devuelve el original,
+# que mide como máximo 3 MB.
+LIMITE_BIGO_BYTES = LIMITE_BYTES + 4 * 1024
+RUTAS_BIGO = ("/api/inspeccionar", "/api/descomprimir")
 
 
 @app.before_request
@@ -32,8 +42,31 @@ def rechazar_archivos_grandes():
     Se revisa aquí (y no dentro de cada endpoint) porque los endpoints atrapan
     cualquier excepción y la convertirían en un 400 genérico.
     """
-    if request.content_length and request.content_length > LIMITE_BYTES:
-        return jsonify({"error": "El archivo pasa de 4 MB, el máximo permitido"}), 413
+    if request.path in RUTAS_BIGO:
+        limite, mensaje = LIMITE_BIGO_BYTES, "El archivo .bigo pasa de 3 MB + 4 KB, el máximo permitido"
+    else:
+        limite, mensaje = LIMITE_BYTES, "El archivo pasa de 3 MB, el máximo permitido"
+    if request.content_length and request.content_length > limite:
+        return jsonify({"error": mensaje}), 413
+
+
+# Un libro de Gutenberg tiene el mismo límite que un .txt local, por la misma razón.
+LIMITE_LIBRO_BYTES = LIMITE_BYTES
+
+
+def _es_url_de_gutenberg(url: str) -> bool:
+    """True solo si la URL es http(s) y su dominio es gutenberg.org o un subdominio.
+
+    No basta con que "gutenberg.org" aparezca en el texto: así se colarían
+    "https://otro.com/?gutenberg.org" o "https://gutenberg.org.otro.com/". Por
+    eso se revisa el nombre del servidor (hostname) que extrae urlparse; también
+    ignora trucos como "https://gutenberg.org@otro.com/" (el servidor es otro.com).
+    """
+    partes = urllib.parse.urlparse(url)
+    servidor = (partes.hostname or "").lower()
+    return partes.scheme in ("http", "https") and (
+        servidor == "gutenberg.org" or servidor.endswith(".gutenberg.org")
+    )
 
 
 def _nombre_base_sin_ext(nombre: str) -> str:
@@ -145,13 +178,25 @@ def api_gutenberg_comprimir():
     url_txt = cuerpo.get("url_txt", "").strip()
     titulo = cuerpo.get("titulo", "libro_gutenberg").strip()
 
-    if not url_txt or "gutenberg.org" not in url_txt:
+    if not url_txt or not _es_url_de_gutenberg(url_txt):
         return jsonify({"error": "URL de Project Gutenberg invalida"}), 400
 
     try:
         req = urllib.request.Request(url_txt, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=20) as resp:
-            datos = resp.read()
+            # urlopen sigue redirecciones: se revisa también la URL final, para
+            # no terminar descargando de otro sitio.
+            if not _es_url_de_gutenberg(resp.geturl()):
+                return jsonify({"error": "La descarga salió de Project Gutenberg"}), 400
+            # Se lee como máximo un byte más que el límite: basta para saber si
+            # lo pasa, sin bajar el libro completo.
+            datos = resp.read(LIMITE_LIBRO_BYTES + 1)
+
+        if len(datos) > LIMITE_LIBRO_BYTES:
+            return jsonify({
+                "error": "El libro pesa más de 3 MB, el máximo que se puede comprimir "
+                         "en línea. Elige otro libro o una edición más corta."
+            }), 413
 
         if not datos:
             return jsonify({"error": "El libro descargado esta vacio"}), 400

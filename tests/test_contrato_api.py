@@ -2,8 +2,9 @@
 
 import base64
 import io
+import random
 
-from app import app
+from app import LIMITE_BIGO_BYTES, LIMITE_BYTES, app
 
 # Vercel acepta como máximo 4.5 MB por respuesta. Usamos 4 500 000 bytes (y no
 # 4.5 × 1024 × 1024) para quedar del lado seguro.
@@ -60,8 +61,37 @@ def test_cada_endpoint_trae_las_claves_del_contrato():
     assert "texto_recuperado" not in desc
 
 
-def test_archivo_de_mas_de_4_mb_responde_413():
+def test_archivo_de_mas_de_3_mb_responde_413():
     cliente = app.test_client()
-    respuesta = _subir(cliente, "/api/comprimir", b"a" * (4 * 1024 * 1024 + 1), "grande.txt")
+    respuesta = _subir(cliente, "/api/comprimir", b"a" * (LIMITE_BYTES + 1), "grande.txt")
     assert respuesta.status_code == 413
-    assert "error" in respuesta.get_json()
+    assert "3 MB" in respuesta.get_json()["error"]
+
+
+def test_bigo_de_mas_de_3_mb_mas_4_kb_responde_413():
+    # Un .bigo tiene 4 KB más de margen que un .txt, pero también tiene límite.
+    cliente = app.test_client()
+    respuesta = _subir(cliente, "/api/descomprimir", b"B" * (LIMITE_BIGO_BYTES + 1), "grande.bigo")
+    assert respuesta.status_code == 413
+    assert "4 KB" in respuesta.get_json()["error"]
+
+
+def test_el_peor_caso_en_el_limite_cabe_en_vercel():
+    """Un archivo casi de 3 MB que casi no se comprime (bytes al azar, los 256 símbolos).
+
+    Es el caso más pesado que el servidor acepta: ni la compresión ni la
+    descompresión deben pasar el límite de respuesta de Vercel.
+    """
+    # Se dejan 1000 bytes de margen para los encabezados del multipart.
+    original = random.Random(0).randbytes(LIMITE_BYTES - 1000)
+    cliente = app.test_client()
+
+    comp = _subir(cliente, "/api/comprimir", original, "azar.txt")
+    assert comp.status_code == 200
+    assert len(comp.data) < LIMITE_RESPUESTA
+
+    bigo = base64.b64decode(comp.get_json()["archivo_bigo_b64"])
+    desc = _subir(cliente, "/api/descomprimir", bigo, "azar.bigo")
+    assert desc.status_code == 200
+    assert len(desc.data) < LIMITE_RESPUESTA
+    assert base64.b64decode(desc.get_json()["archivo_txt_b64"]) == original
