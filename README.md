@@ -13,8 +13,6 @@ Aplicación web que comprime y descomprime archivos de texto con el **algoritmo 
 - Alan Arturo Uribe Pérez
 - Karol Nungaray Escobedo
 
-<img width="1332" height="777" alt="Huffman 1" src="https://github.com/user-attachments/assets/b96aed5a-a184-44ec-ac75-445d4947580e" />
-
 ## Qué hace
 
 La página es un libro con seis capítulos que siguen el proceso completo:
@@ -22,11 +20,22 @@ La página es un libro con seis capítulos que siguen el proceso completo:
 | Capítulo | Qué se hace |
 |---|---|
 | I · El texto | Cargar un `.txt` del equipo o buscar un libro en Project Gutenberg. |
+<img width="1222" height="667" alt="imagen" src="https://github.com/user-attachments/assets/1ae3776d-c4b8-4e4f-b678-b54014238aec" />
+
 | II · Las frecuencias | Tabla con cada símbolo, su frecuencia, porcentaje, código y bits totales. |
+<img width="1178" height="351" alt="imagen" src="https://github.com/user-attachments/assets/1d2178f4-f14b-45bf-96fd-811f01931619" />
+
 | III · El árbol | El árbol de Huffman dibujado en SVG; al pasar sobre una hoja se resalta su código. |
+<img width="1172" height="408" alt="imagen" src="https://github.com/user-attachments/assets/5fd161ab-d60a-4c18-96cd-1f854ae9a4f3" />
+
 | IV · La compresión | Tamaño original y comprimido (bytes y KB/MB), ahorro, % de reducción, razón de compresión, símbolos; descarga del `.bigo`. |
+<img width="1165" height="480" alt="imagen" src="https://github.com/user-attachments/assets/c0df6fcd-3e2c-4221-959a-5baac3daea07" />
+
 | V · El códice | Inspector: con **solo el `.bigo`** muestra versión, tamaños, métricas, mapa de secciones, tabla, árbol reconstruido, total de bits y bits de relleno. |
+<img width="1167" height="477" alt="imagen" src="https://github.com/user-attachments/assets/1e89f46d-2520-430d-b5f7-96f75e5fa185" />
+
 | VI · La restitución | Botón explícito para descomprimir, verificación de integridad (SHA-256 y comparación byte a byte) y descarga del `.txt` recuperado. |
+<img width="1165" height="491" alt="imagen" src="https://github.com/user-attachments/assets/26bcf824-0e1f-4453-b461-b4f8ac282a1b" />
 
 ## Cómo ejecutarlo
 
