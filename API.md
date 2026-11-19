@@ -32,6 +32,12 @@ Todas las rutas responden en formato JSON. En caso de error (`400`, `413` o `502
 - **Endpoint:** `POST /api/gutenberg/comprimir`
 - **Entrada:** JSON `{"url_txt": "...", "titulo": "..."}`
 - **Respuesta (`200 OK`):** Misma estructura que `/api/comprimir` mas `"vista_previa_texto"`
+- **Errores:**
+  - `400` si el dominio de `url_txt` no es `gutenberg.org` o un subdominio suyo (se revisa el
+    dominio, no basta con que el texto aparezca en la URL), si no es `http`/`https`, o si una
+    redireccion lleva fuera de Project Gutenberg
+  - `413` si el libro pesa mas de 3 MB (con mas, la respuesta pasaria el limite de 4.5 MB de Vercel)
+  - `502` si no se pudo descargar el libro
 
 ## 4. Inspeccionar archivo `.bigo` (sin texto original)
 - **Endpoint:** `POST /api/inspeccionar`

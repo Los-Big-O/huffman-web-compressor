@@ -36,6 +36,26 @@ def rechazar_archivos_grandes():
         return jsonify({"error": "El archivo pasa de 4 MB, el máximo permitido"}), 413
 
 
+# Tamaño máximo de un libro de Gutenberg. Su .bigo viaja en base64 (≈ 4/3 del
+# tamaño), así que con 3 MB la respuesta cabe en los 4.5 MB de Vercel.
+LIMITE_LIBRO_BYTES = 3 * 1024 * 1024
+
+
+def _es_url_de_gutenberg(url: str) -> bool:
+    """True solo si la URL es http(s) y su dominio es gutenberg.org o un subdominio.
+
+    No basta con que "gutenberg.org" aparezca en el texto: así se colarían
+    "https://otro.com/?gutenberg.org" o "https://gutenberg.org.otro.com/". Por
+    eso se revisa el nombre del servidor (hostname) que extrae urlparse; también
+    ignora trucos como "https://gutenberg.org@otro.com/" (el servidor es otro.com).
+    """
+    partes = urllib.parse.urlparse(url)
+    servidor = (partes.hostname or "").lower()
+    return partes.scheme in ("http", "https") and (
+        servidor == "gutenberg.org" or servidor.endswith(".gutenberg.org")
+    )
+
+
 def _nombre_base_sin_ext(nombre: str) -> str:
     base = os.path.basename(nombre or "documento")
     raiz, _ = os.path.splitext(base)
@@ -145,13 +165,25 @@ def api_gutenberg_comprimir():
     url_txt = cuerpo.get("url_txt", "").strip()
     titulo = cuerpo.get("titulo", "libro_gutenberg").strip()
 
-    if not url_txt or "gutenberg.org" not in url_txt:
+    if not url_txt or not _es_url_de_gutenberg(url_txt):
         return jsonify({"error": "URL de Project Gutenberg invalida"}), 400
 
     try:
         req = urllib.request.Request(url_txt, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=20) as resp:
-            datos = resp.read()
+            # urlopen sigue redirecciones: se revisa también la URL final, para
+            # no terminar descargando de otro sitio.
+            if not _es_url_de_gutenberg(resp.geturl()):
+                return jsonify({"error": "La descarga salió de Project Gutenberg"}), 400
+            # Se lee como máximo un byte más que el límite: basta para saber si
+            # lo pasa, sin bajar el libro completo.
+            datos = resp.read(LIMITE_LIBRO_BYTES + 1)
+
+        if len(datos) > LIMITE_LIBRO_BYTES:
+            return jsonify({
+                "error": "El libro pesa más de 3 MB, el máximo que se puede comprimir "
+                         "en línea. Elige otro libro o una edición más corta."
+            }), 413
 
         if not datos:
             return jsonify({"error": "El libro descargado esta vacio"}), 400
