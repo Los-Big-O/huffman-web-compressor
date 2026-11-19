@@ -117,8 +117,21 @@ con `git restore` y se verificaron las 251 líneas y las pruebas.
 - **Validación:** los resultados de compresión se midieron con textos reales (y se
   verificó que cada uno se recupera idéntico); se comprobó que la URL del deploy responde.
 
+### 4. Guía de pruebas mínimas (`docs/pruebas/README.md`)
+
+- **Pedido:** una tabla para las cuatro pruebas mínimas, lista para mis capturas.
+- **Validación:** las pruebas automáticas que cita existen y pasan.
+
+### 5. Prueba del equipo que fallaba
+
+- **Pedido:** corregir `test_flujo_api_comprimir_inspeccionar_descomprimir` (de Alan) con un
+  texto más largo y documentar aparte la limitación de los textos cortos.
+- **Hallazgo:** su última línea usaba `texto_recuperado`, que se quitó de la respuesta el
+  2026-11-17; no se notaba porque la prueba fallaba antes. Ahora compara `archivo_txt_b64`.
+- **Validación:** `python -m pytest` con 0 fallas (46 pruebas).
+
 ## Limitaciones conocidas
 
 - El formato v1 del equipo no guarda nombre original ni fecha; se les pidió agregarlos.
-- La prueba `test_flujo_api_comprimir_inspeccionar_descomprimir` del equipo sigue fallando
-  por usar un texto demasiado corto; no la modifiqué porque es del equipo.
+- En textos muy cortos el `.bigo` pesa más que el original (lo documenta
+  `test_texto_muy_corto_el_bigo_pesa_mas_que_el_original`).
