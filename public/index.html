@@ -43,6 +43,21 @@
       <input type="file" id="entrada-txt" accept=".txt,text/plain">
     </label>
     <p class="aviso" id="aviso-texto" role="status" hidden></p>
+
+    <!-- Segunda forma de cargar un texto: la biblioteca de Project Gutenberg (gutenberg.js) -->
+    <div class="biblioteca">
+      <p class="separador" aria-hidden="true"><span>o bien</span></p>
+      <h3>Consulta la biblioteca de Project Gutenberg</h3>
+      <form class="buscador" id="gutenberg-formulario" role="search">
+        <label for="gutenberg-consulta">Título, autor o palabra clave</label>
+        <div class="buscador-fila">
+          <input type="search" id="gutenberg-consulta" placeholder="Por ejemplo: Cervantes" autocomplete="off">
+          <button type="submit" class="boton principal">Buscar</button>
+        </div>
+      </form>
+      <p class="aviso" id="aviso-gutenberg" role="status" hidden></p>
+      <ol class="catalogo" id="gutenberg-resultados"></ol>
+    </div>
     <div class="manuscrito" id="vista-texto" hidden>
       <p class="etiqueta">Manuscrito cargado</p>
       <p class="manuscrito-nombre" id="texto-nombre"></p>
@@ -129,5 +144,6 @@
 <script src="arbol.js"></script>
 <script src="inspector.js"></script>
 <script src="descompresion.js"></script>
+<script src="gutenberg.js"></script>
 </body>
 </html>
