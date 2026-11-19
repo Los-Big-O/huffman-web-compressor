@@ -130,8 +130,40 @@ con `git restore` y se verificaron las 251 líneas y las pruebas.
   2026-11-17; no se notaba porque la prueba fallaba antes. Ahora compara `archivo_txt_b64`.
 - **Validación:** `python -m pytest` con 0 fallas (46 pruebas).
 
+### 6. Seguridad y tamaño en `/api/gutenberg/comprimir` (código del equipo)
+
+- **Hallazgo de la IA, corregido con mi permiso:** la URL se aceptaba si contenía el texto
+  "gutenberg.org" (pasaba `https://otro.com/?gutenberg.org`) y el libro se descargaba sin límite.
+- **Pedido:** validar que el dominio sea `gutenberg.org` o un subdominio y limitar la descarga
+  a 3 MB con un mensaje claro. Revisé el diff antes del commit.
+- **Resultado:** `_es_url_de_gutenberg()` revisa el servidor con `urlparse` (y la URL final
+  después de redirecciones); se leen como máximo 3 MB + 1 byte y, si llega ese byte, 413.
+- **Validación:** 10 pruebas nuevas en `tests/test_gutenberg.py` con la red simulada: 7 URLs
+  engañosas rechazadas sin intentar descargar, 2 aceptadas, una redirección a otro sitio y un
+  libro de 3 MB + 1 byte.
+
+### 7. CLAUDE.md con `gutenberg.js`
+
+- **Pedido:** que el contexto del proyecto describa el nuevo módulo del Capítulo I.
+- **Validación:** revisé el diff.
+
+### 8. Límites de tamaño: 3 MB para `.txt` y 3 MB + 4 KB para `.bigo`
+
+- **Hallazgo de la IA:** con el límite de 4 MB, un `.txt` de 3.5 MB se comprimía, pero al
+  descomprimirlo la respuesta (base64, 4/3 del tamaño) pasaba los 4.5 MB de Vercel.
+- **Pedido:** bajar el límite de los `.txt` a 3 MB y actualizar toda la documentación.
+- **Segundo hallazgo, gracias a una prueba nueva:** un texto de casi 3 MB que casi no se
+  comprime produce un `.bigo` de poco más de 3 MB (por el encabezado, hasta 2,359 bytes), y la
+  app lo rechazaba al inspeccionar o descomprimir. Decidí dar a los `.bigo` 3 MB + 4 KB.
+- **Validación:** `test_el_peor_caso_en_el_limite_cabe_en_vercel` (bytes al azar justo en el
+  límite: las dos respuestas quedan debajo de 4.5 MB y el texto se recupera idéntico) y
+  pruebas del 413 para cada límite. `python -m pytest`: 58 pasan, 0 fallas.
+
 ## Limitaciones conocidas
 
 - El formato v1 del equipo no guarda nombre original ni fecha; se les pidió agregarlos.
 - En textos muy cortos el `.bigo` pesa más que el original (lo documenta
   `test_texto_muy_corto_el_bigo_pesa_mas_que_el_original`).
+- Tamaño máximo: 3 MB para `.txt` y libros de Gutenberg, 3 MB + 4 KB para `.bigo`, por el
+  límite de 4.5 MB por respuesta de Vercel.
+- El buscador de Gutenberg no se ha probado en el navegador porque el sitio estaba caído.
