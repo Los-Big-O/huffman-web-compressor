@@ -70,10 +70,10 @@ huffman/codigos.py      # generar_codigos(raiz)
 huffman/bits.py         # codificar, empaquetar, desempaquetar, decodificar (equipo)
 huffman/formato.py      # (equipo) empaquetar_bigo, inspeccionar_bigo, descomprimir_bigo
 huffman/adaptador.py    # (mío) agrega a las respuestas del equipo los campos de docs/api.md
-public/                 # index.html, estilos.css y un .js por capítulo
+public/                 # index.html, estilos.css y un .js por tarea (incluye gutenberg.js)
 API.md                  # documentación del backend del equipo (todos sus campos)
 docs/api.md             # contrato que usa el frontend
-tests/                  # pruebas (test_adaptador, test_contrato_api, test_integridad son mías)
+tests/                  # pruebas (test_adaptador, test_contrato_api, test_integridad, test_gutenberg son mías)
 ```
 
 No hay `cli.py` en `main`. Revisa `main` por si el equipo cambia la estructura.
@@ -138,10 +138,16 @@ un libro con índice y 6 capítulos que siguen el flujo de la actividad:
 I El texto (cargar) → II Las frecuencias → III El árbol → IV La compresión (métricas y
 descarga) → V El códice (inspector) → VI La restitución (descomprimir y verificar).
 
-Un archivo JS por capítulo: `app.js` (estado compartido, utilidades, carga del .txt),
-`metricas.js`, `tabla.js`, `arbol.js`, `inspector.js`, `descompresion.js`. `app.js` llama
-a cada módulo solo si existe (`typeof fn === "function"`). Todo se construye con
-`textContent`, nunca `innerHTML` con datos del usuario.
+Un archivo JS por tarea: `app.js` (estado compartido, utilidades, carga del .txt),
+`gutenberg.js` (buscador de Project Gutenberg, también en el Capítulo I), `metricas.js`,
+`tabla.js`, `arbol.js`, `inspector.js`, `descompresion.js`. `app.js` llama a cada módulo
+solo si existe (`typeof fn === "function"`). Todo se construye con `textContent`, nunca
+`innerHTML` con datos del usuario.
+
+`gutenberg.js` usa `/api/gutenberg/buscar` y `/api/gutenberg/comprimir` (el servidor baja
+el libro; máximo 3 MB y solo de `gutenberg.org` o sus subdominios). Como el navegador solo
+recibe una vista previa, deja `estado.original = null` y el Capítulo VI verifica con
+SHA-256 sin comparar byte a byte. Sus pruebas (`tests/test_gutenberg.py`) simulan la red.
 
 ## Material que ya existe fuera de `main`
 
